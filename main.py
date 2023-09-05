@@ -4,7 +4,8 @@ from SystemHelper import SystemHelper
 from GenericHelper import GenericHelper
 from utils import strip_ansi_escape_codes, load_value_from_shelf, save_value_to_shelf
 
-# ========================================================================================
+# ========================================prepare================================================
+# ========================================prepare================================================
 gHelper = GenericHelper()
 sHelper = SystemHelper()
 sg.theme("Topanga")  # Use the 'Topanga' theme for a colorful appearance
@@ -32,8 +33,10 @@ def set_defaults(input_value):
 
 logger.remove()  # Remove the default logger
 logger.add(gui_log_handler, colorize=True)  # Add the custom handler
-# ========================================================================================
+# ========================================prepare================================================
+# ========================================prepare================================================
 
+# *********************************************layouts*********************************************
 # *********************************************layouts*********************************************
 user_frame = [
     [
@@ -73,7 +76,6 @@ magic_frame = [
     [sg.Button("Android_Logcat")],
     [sg.Button("QNX_slog2info")],
 ]
-
 output_frame = [
     [sg.Multiline(key="log", size=(100, 10), background_color="black")],
     [sg.Multiline(key="output", size=(100, 10), background_color="black")],
@@ -96,6 +98,7 @@ layout = [
     [sg.Frame("Output", output_frame, font=("Arial", 12))],
 ]
 # *********************************************layouts*********************************************
+# *********************************************layouts*********************************************
 
 window = sg.Window("Lazy Logger", layout, finalize=True)
 window["qnx"].bind("<Return>", "_Enter")  # Bind the Return key to the Execute button
@@ -106,22 +109,28 @@ set_defaults(input_value)
 while True:
     event, values = window.read()
     if event == sg.WINDOW_CLOSED:
-        input_value.update({
-            "aos": window["aos"].get(),
-            "qnx": window["qnx"].get(),
-            "username": window["username"].get(),
-            "password": window["password"].get(),
-            "comport": window["comport"].get(),
-        })
+        input_value.update(
+            {
+                "aos": window["aos"].get(),
+                "qnx": window["qnx"].get(),
+                "username": window["username"].get(),
+                "password": window["password"].get(),
+                "comport": window["comport"].get(),
+            }
+        )
         save_value_to_shelf(input_value)
         break
     elif event == "Execute" or event == "qnx_Enter" or event == "aos_Enter":
-        qnx_path = values["qnx"]
-        aos_path = values["aos"]
-        # if aos_path:
-        #     sHelper.Android2PC(androidPath=aos_path)
-        # if qnx_path:
-        #     sHelper.QNX2PC()
+        if aos_path := values["aos"]:
+            sHelper.Android2PC(androidPath=aos_path)
+        if qnx_path := values["qnx"]:
+            sHelper.QNX2PC(
+                comport=values["comport"],
+                qnxPath=qnx_path,
+                deviceID=values["deviceid"],
+                username=values["username"],
+                password=values["password"],
+            )
         # output_text = f"Command: {output}\nOutput: [Output will go here]\n"
         # window["output"].print(output_text)
     elif event == "Android_Snapshot":

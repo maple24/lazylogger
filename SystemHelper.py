@@ -13,39 +13,43 @@ class SystemHelper:
     def serial_command(
         cmd, comport: str, username="root", password="root", timeout=5.0
     ) -> list:
-        with serial.Serial(comport, baudrate=115200, timeout=2) as ser:
-            logger.info(f"Opening port {comport}...")
-            ser.write("\n".encode())
-            res = ser.readlines()
-            if len(res) == 0:
-                logger.error(f"Fail to open port {comport}!")
-                exit(1)
-            if GenericHelper.match_string("(login:.*)", res)[0]:
-                logger.info(f"Enter username is {username}")
-                ser.write((username + "\n").encode())
-                if GenericHelper.match_string("(Password:.*)", ser.readlines())[0]:
-                    logger.info(f"Enter password is {password}")
-                    ser.write((password + "\n").encode())
-                if not GenericHelper.match_string(
-                    "(Logging in with home .*)", ser.readlines()
-                )[0]:
-                    logger.info("Fail to login!")
-                    exit(1)
-            logger.info("[{stream}] - {message}", stream="PuttyTx", message=cmd)
-            if isinstance(cmd, list):
-                for i in cmd:
-                    ser.write((i + "\n").encode())
-            else:
-                ser.write((cmd + "\n").encode())
-            data = []
-            start = time.time()
-            while time.time() - start < timeout:
-                line = ser.readline().decode()
-                if not line:
-                    break
-                data.append(line)
-                logger.debug("[{stream}] - {message}", stream="PuttyRx", message=line)
-            return data
+        try:
+            with serial.Serial(comport, baudrate=115200, timeout=2) as ser:
+                logger.info(f"Opening port {comport}...")
+                ser.write("\n".encode())
+                res = ser.readlines()
+                if len(res) == 0:
+                    logger.error(f"Fail to open port {comport}!")
+                    return
+                if GenericHelper.match_string("(login:.*)", res)[0]:
+                    logger.info(f"Enter username is {username}")
+                    ser.write((username + "\n").encode())
+                    if GenericHelper.match_string("(Password:.*)", ser.readlines())[0]:
+                        logger.info(f"Enter password is {password}")
+                        ser.write((password + "\n").encode())
+                    if not GenericHelper.match_string(
+                        "(Logging in with home .*)", ser.readlines()
+                    )[0]:
+                        logger.info("Fail to login!")
+                        return
+                logger.info("[{stream}] - {message}", stream="PuttyTx", message=cmd)
+                if isinstance(cmd, list):
+                    for i in cmd:
+                        ser.write((i + "\n").encode())
+                else:
+                    ser.write((cmd + "\n").encode())
+                data = []
+                start = time.time()
+                while time.time() - start < timeout:
+                    line = ser.readline().decode()
+                    if not line:
+                        break
+                    data.append(line)
+                    logger.debug("[{stream}] - {message}", stream="PuttyRx", message=line)
+                return data
+        except serial.serialutil.SerialException:
+            logger.error(f"Could not open port {comport}")
+            return
 
     @staticmethod
     def get_adb_devices() -> Optional[list]:
@@ -133,4 +137,4 @@ class SystemHelper:
 
 
 if __name__ == "__main__":
-    SystemHelper.get_adb_devices()
+    SystemHelper.QNX2PC(comport="123", qnxPath="123")
