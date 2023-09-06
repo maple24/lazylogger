@@ -35,7 +35,7 @@ def exclude_if(*patterns):
     return decorator
 
 
-@exclude_if(r"\.bak$", r"\.dat$", r"\.dir$")
+@exclude_if(r"\.bak$", r"\.dat$", r"\.dir$", r"\.exe$")
 def list_files(directory_path):
     return directory_path
 

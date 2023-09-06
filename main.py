@@ -40,11 +40,14 @@ def set_defaults(input_value):
         window["password"].update(p)
     if c := input_value.get("comport"):
         window["comport"].update(c)
+    if f := input_value.get("folder"):
+        window["folder"].update(f)
 
 
 logger.remove()  # Remove the default logger
 logger.add(gui_log_handler, colorize=True)  # Add the custom handler
 default_folder = os.path.dirname(__file__)
+files = set()
 # ========================================prepare================================================
 # ========================================prepare================================================
 
@@ -81,7 +84,14 @@ system_frame = [
 input_frame = [
     [sg.Text("Local path: ")],
     [
-        sg.InputText(key="-FOLDER-", size=(60,), default_text=default_folder),
+        sg.InputText(
+            key="folder",
+            size=(60,),
+            default_text=default_folder,
+            text_color="black",
+            disabled=True,
+            enable_events=True,
+        ),
         sg.FolderBrowse("Browse", initial_folder=default_folder),
     ],
     [sg.Text("QNX path: ")],
@@ -138,17 +148,19 @@ while True:
                 "username": window["username"].get(),
                 "password": window["password"].get(),
                 "comport": window["comport"].get(),
+                "folder": window["folder"].get(),
             }
         )
         save_value_to_shelf(input_value)
         break
     elif event == "Execute" or event == "qnx_Enter" or event == "aos_Enter":
         if aos_path := values["aos"]:
-            sHelper.Android2PC(androidPath=aos_path)
+            sHelper.Android2PC(androidPath=aos_path, localPath=values["folder"])
         if qnx_path := values["qnx"]:
             sHelper.QNX2PC(
                 comport=values["comport"],
                 qnxPath=qnx_path,
+                localPath=values["folder"],
                 deviceID=values["deviceid"],
                 username=values["username"],
                 password=values["password"],
@@ -162,8 +174,8 @@ while True:
     elif event == "Clear":
         window["log"].update("")
         window["output"].update("")
-    files = list_files(default_folder)
+    files.update(list_files(window["folder"].get()))
     output_text = "\n".join(files)
-    window["output"].print(output_text)
+    window["output"].update(value=output_text)
 
 window.close()
