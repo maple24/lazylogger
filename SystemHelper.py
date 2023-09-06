@@ -13,43 +13,39 @@ class SystemHelper:
     def serial_command(
         cmd, comport: str, username="root", password="root", timeout=5.0
     ) -> list:
-        try:
-            with serial.Serial(comport, baudrate=115200, timeout=2) as ser:
-                logger.info(f"Opening port {comport}...")
-                ser.write("\n".encode())
-                res = ser.readlines()
-                if len(res) == 0:
-                    logger.error(f"Fail to open port {comport}!")
+        with serial.Serial(comport, baudrate=115200, timeout=2) as ser:
+            logger.info(f"Opening port {comport}...")
+            ser.write("\n".encode())
+            res = ser.readlines()
+            if len(res) == 0:
+                logger.error(f"Fail to open port {comport}!")
+                return
+            if GenericHelper.match_string("(login:.*)", res)[0]:
+                logger.info(f"Enter username is {username}")
+                ser.write((username + "\n").encode())
+                if GenericHelper.match_string("(Password:.*)", ser.readlines())[0]:
+                    logger.info(f"Enter password is {password}")
+                    ser.write((password + "\n").encode())
+                if not GenericHelper.match_string(
+                    "(Logging in with home .*)", ser.readlines()
+                )[0]:
+                    logger.info("Fail to login!")
                     return
-                if GenericHelper.match_string("(login:.*)", res)[0]:
-                    logger.info(f"Enter username is {username}")
-                    ser.write((username + "\n").encode())
-                    if GenericHelper.match_string("(Password:.*)", ser.readlines())[0]:
-                        logger.info(f"Enter password is {password}")
-                        ser.write((password + "\n").encode())
-                    if not GenericHelper.match_string(
-                        "(Logging in with home .*)", ser.readlines()
-                    )[0]:
-                        logger.info("Fail to login!")
-                        return
-                logger.info("[{stream}] - {message}", stream="PuttyTx", message=cmd)
-                if isinstance(cmd, list):
-                    for i in cmd:
-                        ser.write((i + "\n").encode())
-                else:
-                    ser.write((cmd + "\n").encode())
-                data = []
-                start = time.time()
-                while time.time() - start < timeout:
-                    line = ser.readline().decode()
-                    if not line:
-                        break
-                    data.append(line)
-                    logger.debug("[{stream}] - {message}", stream="PuttyRx", message=line)
-                return data
-        except serial.serialutil.SerialException:
-            logger.error(f"Could not open port {comport}")
-            return
+            logger.info("[{stream}] - {message}", stream="PuttyTx", message=cmd)
+            if isinstance(cmd, list):
+                for i in cmd:
+                    ser.write((i + "\n").encode())
+            else:
+                ser.write((cmd + "\n").encode())
+            data = []
+            start = time.time()
+            while time.time() - start < timeout:
+                line = ser.readline().decode()
+                if not line:
+                    break
+                data.append(line)
+                logger.debug("[{stream}] - {message}", stream="PuttyRx", message=line)
+            return data
 
     @staticmethod
     def get_adb_devices() -> Optional[list]:
@@ -117,7 +113,10 @@ class SystemHelper:
         SystemHelper.PC2Android(localPath, androidPath, deviceID)
         if qnxPath is not None:
             cmd = f"cp {SystemHelper.disk_mapping.get('qnx', '/data/share/')}/{filename} {qnxPath}"
-            SystemHelper.serial_command(cmd, comport, username, password)
+            try:
+                SystemHelper.serial_command(cmd, comport, username, password)
+            except serial.serialutil.SerialException:
+                logger.error(f"Could not open port {comport}")
 
     @staticmethod
     def QNX2PC(
@@ -131,7 +130,10 @@ class SystemHelper:
         filename = os.path.basename(qnxPath)
         logger.info(f"Target file is {filename}")
         cmd = f"cp {qnxPath} {SystemHelper.disk_mapping.get('qnx', '/data/share/')}"
-        SystemHelper.serial_command(cmd, comport, username, password)
+        try:
+            SystemHelper.serial_command(cmd, comport, username, password)
+        except serial.serialutil.SerialException:
+            logger.error(f"Could not open port {comport}")
         androidPath = f"{SystemHelper.disk_mapping.get('android', '/data/nfs/nfs_share/')}/{filename}"
         SystemHelper.Android2PC(androidPath, localPath, deviceID)
 

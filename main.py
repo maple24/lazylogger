@@ -1,8 +1,14 @@
 import PySimpleGUI as sg
+import os
 from loguru import logger
 from SystemHelper import SystemHelper
 from GenericHelper import GenericHelper
-from utils import strip_ansi_escape_codes, load_value_from_shelf, save_value_to_shelf
+from utils import (
+    strip_ansi_escape_codes,
+    load_value_from_shelf,
+    save_value_to_shelf,
+    list_files,
+)
 
 # ========================================prepare================================================
 # ========================================prepare================================================
@@ -18,6 +24,12 @@ def gui_log_handler(message):
 
 
 def set_defaults(input_value):
+    if deviceid := sHelper.get_adb_devices():
+        window["deviceid"].update(deviceid[0])
+    window["user"].update(gHelper.get_username())
+    window["machine"].update(gHelper.get_hostname())
+    if not input_value:
+        return
     if a := input_value.get("aos"):
         window["aos"].update(a)
     if q := input_value.get("qnx"):
@@ -28,11 +40,11 @@ def set_defaults(input_value):
         window["password"].update(p)
     if c := input_value.get("comport"):
         window["comport"].update(c)
-    window["deviceid"].update("test")
 
 
 logger.remove()  # Remove the default logger
 logger.add(gui_log_handler, colorize=True)  # Add the custom handler
+default_folder = os.path.dirname(__file__)
 # ========================================prepare================================================
 # ========================================prepare================================================
 
@@ -42,6 +54,10 @@ user_frame = [
     [
         sg.Text("User", size=(10,)),
         sg.InputText(default_text="", key="user", size=(20,)),
+    ],
+    [
+        sg.Text("Machine", size=(10,)),
+        sg.InputText(default_text="", key="machine", size=(20,)),
     ],
 ]
 system_frame = [
@@ -63,11 +79,16 @@ system_frame = [
     ],
 ]
 input_frame = [
+    [sg.Text("Local path: ")],
+    [
+        sg.InputText(key="-FOLDER-", size=(60,), default_text=default_folder),
+        sg.FolderBrowse("Browse", initial_folder=default_folder),
+    ],
     [sg.Text("QNX path: ")],
-    [sg.InputText(key="qnx", size=(52,), focus=True)],
+    [sg.InputText(key="qnx", size=(60,), focus=True)],
     [sg.Text("eg. /mnt/nfs_share/test.txt", font=("Arial", 8))],
     [sg.Text("Android path: ")],
-    [sg.InputText(key="aos", size=(52,)), sg.Button("Execute")],
+    [sg.InputText(key="aos", size=(60,)), sg.Button("Execute")],
     [sg.Text("eg. /data/vendor/nfs/mount/text.txt", font=("Arial", 8))],
 ]
 magic_frame = [
@@ -90,9 +111,9 @@ layout = [
     ],
     [sg.HorizontalSeparator()],
     [
-        sg.Frame("Input", input_frame, font=("Arial", 12), size=(500, 180)),
+        sg.Frame("Input", input_frame, font=("Arial", 12), size=(500, 240)),
         sg.VerticalSeparator(),
-        sg.Frame("Magic", magic_frame, font=("Arial", 12), size=(200, 180)),
+        sg.Frame("Magic", magic_frame, font=("Arial", 12), size=(200, 240)),
     ],
     [sg.HorizontalSeparator()],
     [sg.Frame("Output", output_frame, font=("Arial", 12))],
@@ -103,7 +124,8 @@ layout = [
 window = sg.Window("Lazy Logger", layout, finalize=True)
 window["qnx"].bind("<Return>", "_Enter")  # Bind the Return key to the Execute button
 window["aos"].bind("<Return>", "_Enter")  # Bind the Return key to the Execute button
-input_value = load_value_from_shelf()
+store = load_value_from_shelf()
+input_value = store if store else {}
 set_defaults(input_value)
 
 while True:
@@ -131,8 +153,6 @@ while True:
                 username=values["username"],
                 password=values["password"],
             )
-        # output_text = f"Command: {output}\nOutput: [Output will go here]\n"
-        # window["output"].print(output_text)
     elif event == "Android_Snapshot":
         ...
     elif event == "Android_Logcat":
@@ -142,5 +162,8 @@ while True:
     elif event == "Clear":
         window["log"].update("")
         window["output"].update("")
+    files = list_files(default_folder)
+    output_text = "\n".join(files)
+    window["output"].print(output_text)
 
 window.close()
