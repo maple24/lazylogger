@@ -3,6 +3,7 @@ import os
 from loguru import logger
 from SystemHelper import SystemHelper
 from GenericHelper import GenericHelper
+import threading
 from utils import (
     strip_ansi_escape_codes,
     load_value_from_shelf,
@@ -155,16 +156,28 @@ while True:
         break
     elif event == "Execute" or event == "qnx_Enter" or event == "aos_Enter":
         if aos_path := values["aos"]:
-            sHelper.Android2PC(androidPath=aos_path, localPath=values["folder"])
+            threading.Thread(
+                target=sHelper.Android2PC,
+                kwargs={
+                    "androidPath": aos_path,
+                    "localPath": values["folder"],
+                    "deviceID": values["deviceid"],
+                },
+                daemon=True,
+            ).start()
         if qnx_path := values["qnx"]:
-            sHelper.QNX2PC(
-                comport=values["comport"],
-                qnxPath=qnx_path,
-                localPath=values["folder"],
-                deviceID=values["deviceid"],
-                username=values["username"],
-                password=values["password"],
-            )
+            threading.Thread(
+                target=sHelper.QNX2PC,
+                kwargs={
+                    "comport": values["comport"],
+                    "qnxPath": qnx_path,
+                    "localPath": values["folder"],
+                    "deviceID": values["deviceid"],
+                    "username": values["username"],
+                    "password": values["password"],
+                },
+                daemon=True,
+            ).start()
     elif event == "Android_Snapshot":
         ...
     elif event == "Android_Logcat":
