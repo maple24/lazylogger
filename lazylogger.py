@@ -15,7 +15,8 @@ from utils import (
 # ========================================prepare================================================
 # ========================================prepare================================================
 sg.theme("Topanga")  # Use the 'Topanga' theme for a colorful appearance
-
+__author__ = "Author: ZHU JIN"
+__version__ = "Version: 1.0"
 
 # Configure Loguru to use the custom handler
 def gui_log_handler(message):
@@ -87,7 +88,9 @@ default_folder = os.path.dirname(__file__)
 
 # *********************************************layouts*********************************************
 # *********************************************layouts*********************************************
-user_frame = [
+software_frame = [
+    [sg.Text(__author__), sg.Text(__version__)],
+    [sg.HorizontalSeparator()],
     [
         sg.Text("User", size=(15,)),
         sg.InputText(default_text="", key="user", size=(20,)),
@@ -164,8 +167,8 @@ output_frame = [
 
 # Combine frames and separator in the layout
 layout = [
-    [
-        sg.Frame("User", user_frame, font=("Arial", 12), size=(350, 180)),
+    [        
+        sg.Frame("Software", software_frame, font=("Arial", 12), size=(350, 180)),
         sg.VerticalSeparator(),
         sg.Frame("System", system_frame, font=("Arial", 12), size=(350, 180)),
     ],
