@@ -7,7 +7,7 @@ from GenericHelper import GenericHelper
 
 
 class SystemHelper:
-    disk_mapping = {"qnx": "/mnt/nfs_share", "android": "/data/vendor/nfs/mount"}
+    disk_mapping = {"qnx": "/mnt/nfs_share", "android": "/nfs_share"}
 
     @staticmethod
     def serial_command(
@@ -129,7 +129,7 @@ class SystemHelper:
     ) -> None:
         filename = os.path.basename(qnxPath)
         logger.info(f"Target file is {filename}")
-        cmd = f"cp {qnxPath} {SystemHelper.disk_mapping.get('qnx', '/data/share/')}"
+        cmd = f"cp -r {qnxPath} {SystemHelper.disk_mapping.get('qnx', '/data/share/')}"
         try:
             SystemHelper.serial_command(cmd, comport, username, password)
         except serial.serialutil.SerialException:

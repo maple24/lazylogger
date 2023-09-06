@@ -1,20 +1,19 @@
 import PySimpleGUI as sg
 import os
 from loguru import logger
+import threading
+import time
 from SystemHelper import SystemHelper
 from GenericHelper import GenericHelper
-import threading
 from utils import (
     strip_ansi_escape_codes,
     load_value_from_shelf,
     save_value_to_shelf,
-    list_files,
+    get_file_modification_times,
 )
 
 # ========================================prepare================================================
 # ========================================prepare================================================
-gHelper = GenericHelper()
-sHelper = SystemHelper()
 sg.theme("Topanga")  # Use the 'Topanga' theme for a colorful appearance
 
 
@@ -25,10 +24,10 @@ def gui_log_handler(message):
 
 
 def set_defaults(input_value):
-    if deviceid := sHelper.get_adb_devices():
+    if deviceid := SystemHelper.get_adb_devices():
         window["deviceid"].update(deviceid[0])
-    window["user"].update(gHelper.get_username())
-    window["machine"].update(gHelper.get_hostname())
+    window["user"].update(GenericHelper.get_username())
+    window["machine"].update(GenericHelper.get_hostname())
     if not input_value:
         return
     if a := input_value.get("aos"):
@@ -43,12 +42,46 @@ def set_defaults(input_value):
         window["comport"].update(c)
     if f := input_value.get("folder"):
         window["folder"].update(f)
+    if qm := input_value.get("qnxmapping"):
+        window["qnxmapping"].update(qm)
+        SystemHelper.disk_mapping.update({"qnx": qm})
+    if am := input_value.get("aosmapping"):
+        window["aosmapping"].update(am)
+        SystemHelper.disk_mapping.update({"android": am})
+
+
+def update_text_area(folder_path):
+    # previous_files = set(list_files(folder_path))
+    # # previous_files = set()
+
+    # while True:
+    #     time.sleep(0.1)
+    #     files = set(list_files(folder_path))
+    #     new_files = files - previous_files
+    #     # if files != previous_files:
+    #     if new_files:
+    #         # window["output"].update("\n".join(files))
+    #         window["output"].update("\n".join(new_files) + "\n", append=True)
+    #     previous_files = files
+    previous_mod_times = get_file_modification_times(folder_path)
+
+    while True:
+        time.sleep(0.1)
+        current_mod_times = get_file_modification_times(folder_path)
+        changed_files = [
+            file
+            for file in current_mod_times
+            if current_mod_times[file] != previous_mod_times.get(file)
+        ]
+        if changed_files:
+            window["output"].update("\n".join(changed_files))
+        previous_mod_times = current_mod_times
+        sg.popup_animated(None)  # Refresh the window to prevent flickering
 
 
 logger.remove()  # Remove the default logger
 logger.add(gui_log_handler, colorize=True)  # Add the custom handler
 default_folder = os.path.dirname(__file__)
-files = set()
 # ========================================prepare================================================
 # ========================================prepare================================================
 
@@ -56,30 +89,38 @@ files = set()
 # *********************************************layouts*********************************************
 user_frame = [
     [
-        sg.Text("User", size=(10,)),
+        sg.Text("User", size=(15,)),
         sg.InputText(default_text="", key="user", size=(20,)),
     ],
     [
-        sg.Text("Machine", size=(10,)),
+        sg.Text("Machine", size=(15,)),
         sg.InputText(default_text="", key="machine", size=(20,)),
     ],
 ]
 system_frame = [
     [
-        sg.Text("Username", size=(10,)),
+        sg.Text("Username", size=(15,)),
         sg.InputText(default_text="zeekr", key="username", size=(20,)),
     ],
     [
-        sg.Text("Password", size=(10,)),
+        sg.Text("Password", size=(15,)),
         sg.InputText(default_text="Aa123123", key="password", size=(20,)),
     ],
     [
-        sg.Text("Comport", size=(10,)),
+        sg.Text("Comport", size=(15,)),
         sg.InputText(key="comport", size=(20,)),
     ],
     [
-        sg.Text("DeviceID", size=(10,)),
+        sg.Text("DeviceID", size=(15,)),
         sg.InputText(key="deviceid", size=(20,)),
+    ],
+    [
+        sg.Text("QNX_mapping", size=(15,)),
+        sg.InputText(default_text="/mnt/nfs_share", key="qnxmapping", size=(20,)),
+    ],
+    [
+        sg.Text("AOS_mapping", size=(15,)),
+        sg.InputText(default_text="/nfs_share", key="aosmapping", size=(20,)),
     ],
 ]
 input_frame = [
@@ -109,16 +150,24 @@ magic_frame = [
     [sg.Button("QNX_slog2info")],
 ]
 output_frame = [
-    [sg.Multiline(key="log", size=(100, 10), background_color="black")],
-    [sg.Multiline(key="output", size=(100, 10), background_color="black")],
+    [
+        sg.Multiline(
+            key="log", size=(100, 10), background_color="black", autoscroll=True
+        )
+    ],
+    [
+        sg.Multiline(
+            key="output", size=(100, 10), background_color="black", autoscroll=True
+        )
+    ],
 ]
 
 # Combine frames and separator in the layout
 layout = [
     [
-        sg.Frame("User", user_frame, font=("Arial", 12), size=(350, 150)),
+        sg.Frame("User", user_frame, font=("Arial", 12), size=(350, 180)),
         sg.VerticalSeparator(),
-        sg.Frame("System", system_frame, font=("Arial", 12), size=(350, 150)),
+        sg.Frame("System", system_frame, font=("Arial", 12), size=(350, 180)),
     ],
     [sg.HorizontalSeparator()],
     [
@@ -137,7 +186,8 @@ window["qnx"].bind("<Return>", "_Enter")  # Bind the Return key to the Execute b
 window["aos"].bind("<Return>", "_Enter")  # Bind the Return key to the Execute button
 store = load_value_from_shelf()
 input_value = store if store else {}
-set_defaults(input_value)
+threading.Thread(target=set_defaults, args=(input_value,), daemon=True).start()
+threading.Thread(target=update_text_area, args=(default_folder,), daemon=True).start()
 
 while True:
     event, values = window.read()
@@ -150,6 +200,8 @@ while True:
                 "password": window["password"].get(),
                 "comport": window["comport"].get(),
                 "folder": window["folder"].get(),
+                "qnxmapping": window["qnxmapping"].get(),
+                "aosmapping": window["aosmapping"].get(),
             }
         )
         save_value_to_shelf(input_value)
@@ -157,7 +209,7 @@ while True:
     elif event == "Execute" or event == "qnx_Enter" or event == "aos_Enter":
         if aos_path := values["aos"]:
             threading.Thread(
-                target=sHelper.Android2PC,
+                target=SystemHelper.Android2PC,
                 kwargs={
                     "androidPath": aos_path,
                     "localPath": values["folder"],
@@ -167,7 +219,7 @@ while True:
             ).start()
         if qnx_path := values["qnx"]:
             threading.Thread(
-                target=sHelper.QNX2PC,
+                target=SystemHelper.QNX2PC,
                 kwargs={
                     "comport": values["comport"],
                     "qnxPath": qnx_path,
@@ -187,8 +239,6 @@ while True:
     elif event == "Clear":
         window["log"].update("")
         window["output"].update("")
-    files.update(list_files(window["folder"].get()))
-    output_text = "\n".join(files)
-    window["output"].update(value=output_text)
+
 
 window.close()

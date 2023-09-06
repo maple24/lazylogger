@@ -40,6 +40,15 @@ def list_files(directory_path):
     return directory_path
 
 
+def get_file_modification_times(folder_path):
+    file_mod_times = {}
+    for file in list_files(folder_path):
+        file_path = os.path.join(folder_path, file)
+        mod_time = os.path.getmtime(file_path)
+        file_mod_times[file] = mod_time
+    return file_mod_times
+
+
 if __name__ == "__main__":
     # Example usage:
     directory_path = "."
