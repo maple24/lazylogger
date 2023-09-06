@@ -157,7 +157,7 @@ output_frame = [
     ],
     [
         sg.Multiline(
-            key="output", size=(100, 10), background_color="black", autoscroll=True
+            key="output", size=(100, 5), background_color="black", autoscroll=True
         )
     ],
 ]
