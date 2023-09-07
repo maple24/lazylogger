@@ -132,10 +132,10 @@ input_frame = [
         sg.FolderBrowse("Browse", initial_folder=default_folder),
     ],
     [sg.Text("QNX path: ")],
-    [sg.InputText(key="qnx", size=(60,), focus=True)],
+    [sg.InputText(key="qnx", size=(60,), focus=True), sg.Button("Execute", key="qnxexecute")],
     [sg.Text("eg. /mnt/nfs_share/test.txt", font=("Arial", 8))],
     [sg.Text("Android path: ")],
-    [sg.InputText(key="aos", size=(60,)), sg.Button("Execute")],
+    [sg.InputText(key="aos", size=(60,)), sg.Button("Execute", key="aosexecute")],
     [sg.Text("eg. /data/vendor/nfs/mount/text.txt", font=("Arial", 8))],
 ]
 magic_frame = [
@@ -168,9 +168,9 @@ layout = [
     ],
     [sg.HorizontalSeparator()],
     [
-        sg.Frame("Input", input_frame, font=("Arial", 12), size=(500, 240)),
+        sg.Frame("Input", input_frame, font=("Arial", 12), size=(500, 250)),
         sg.VerticalSeparator(),
-        sg.Frame("Magic", magic_frame, font=("Arial", 12), size=(200, 240)),
+        sg.Frame("Magic", magic_frame, font=("Arial", 12), size=(200, 250)),
     ],
     [sg.HorizontalSeparator()],
     [sg.Frame("Output", output_frame, font=("Arial", 12))],
@@ -203,17 +203,7 @@ while True:
         )
         save_value_to_shelf(input_value)
         break
-    elif event == "Execute" or event == "qnx_Enter" or event == "aos_Enter":
-        if aos_path := values["aos"]:
-            threading.Thread(
-                target=SystemHelper.Android2PC,
-                kwargs={
-                    "androidPath": aos_path,
-                    "localPath": values["folder"],
-                    "deviceID": values["deviceid"],
-                },
-                daemon=True,
-            ).start()
+    elif event == "qnxexecute" or event == "qnx_Enter":
         if qnx_path := values["qnx"]:
             threading.Thread(
                 target=SystemHelper.QNX2PC,
@@ -224,6 +214,17 @@ while True:
                     "deviceID": values["deviceid"],
                     "username": values["username"],
                     "password": values["password"],
+                },
+                daemon=True,
+            ).start()
+    elif event == "aosexecute" or event == "aos_Enter":
+        if aos_path := values["aos"]:
+            threading.Thread(
+                target=SystemHelper.Android2PC,
+                kwargs={
+                    "androidPath": aos_path,
+                    "localPath": values["folder"],
+                    "deviceID": values["deviceid"],
                 },
                 daemon=True,
             ).start()
