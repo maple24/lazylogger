@@ -11,7 +11,7 @@ from utils import (
     save_value_to_shelf,
     get_file_modification_times,
     get_desktop,
-    list_files
+    list_files,
 )
 
 # ========================================prepare================================================
@@ -54,23 +54,22 @@ def set_defaults(input_value):
         SystemHelper.disk_mapping.update({"android": am})
 
 
-def update_text_area(folder_path):
-    # previous_mod_times = get_file_modification_times(folder_path)
+def update_text_area(default_folder):
+    previous_mod_times = get_file_modification_times(default_folder)
 
-    # while True:
-    #     time.sleep(0.1)
-    #     current_mod_times = get_file_modification_times(folder_path)
-    #     changed_files = [
-    #         file
-    #         for file in current_mod_times
-    #         if current_mod_times[file] != previous_mod_times.get(file)
-    #     ]
-    #     if changed_files:
-    #         window["output"].update("\n".join(changed_files))
-    #     previous_mod_times = current_mod_times
-    #     sg.popup_animated(None)  # Refresh the window to prevent flickering
-    files = set(list_files(folder_path))
-    window["output"].update("\n".join(files))
+    while True:
+        time.sleep(0.1)
+        folder_path = window["folder"].get()
+        current_mod_times = get_file_modification_times(folder_path)
+        changed_files = [
+            file
+            for file in current_mod_times
+            if current_mod_times[file] != previous_mod_times.get(file)
+        ]
+        if changed_files:
+            window["output"].update("\n".join(changed_files))
+        previous_mod_times = current_mod_times
+        sg.popup_animated(None)  # Refresh the window to prevent flickering
 
 
 logger.remove()  # Remove the default logger
@@ -183,6 +182,7 @@ window["aos"].bind("<Return>", "_Enter")  # Bind the Return key to the Execute b
 store = load_value_from_shelf()
 input_value = store if store else {}
 threading.Thread(target=set_defaults, args=(input_value,), daemon=True).start()
+threading.Thread(target=update_text_area, args=(default_folder,), daemon=True).start()
 
 while True:
     event, values = window.read()
@@ -235,13 +235,28 @@ while True:
             daemon=True,
         ).start()
     elif event == "Android_Logcat":
-        logger.info("Upcoming!")
+        threading.Thread(
+            target=SystemHelper.android_logcat,
+            kwargs={
+                "deviceID": values["deviceid"],
+                "localPath": values["folder"],
+            },
+            daemon=True,
+        ).start()
     elif event == "QNX_slog2info":
-        logger.info("Upcoming!")
+        threading.Thread(
+            target=SystemHelper.QNX_slog,
+            kwargs={
+                "comport": values["comport"],
+                "localPath": values["folder"],
+                "deviceID": values["deviceid"],
+                "username": values["username"],
+                "password": values["password"],
+            },
+            daemon=True,
+        ).start()
     elif event == "Clear":
         window["log"].update("")
         window["output"].update("")
-    threading.Thread(target=update_text_area, args=(window["folder"].get(), ), daemon=True).start()
-
 
 window.close()
