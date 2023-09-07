@@ -72,22 +72,6 @@ class SystemHelper:
         return False
 
     @staticmethod
-    def android_screencapture(
-        deviceID: str = "1234567", name: str = "screencap.png", localPath: str = "."
-    ) -> str:
-        cmd = f"adb -s {deviceID} shell screencap -p /sdcard/{name} && adb -s {deviceID} pull /sdcard/{name} {localPath}"
-        GenericHelper.prompt_command(cmd)
-        return os.path.join(localPath, name)
-
-    @staticmethod
-    def android_logcat(
-        deviceID: str = "1234567", name: str = "logcat.txt", localPath: str = "."
-    ) -> str:
-        cmd = f"adb -s {deviceID} logcat -d -f /sdcard/{name} && adb -s {deviceID} pull /sdcard/{name} {localPath}"
-        GenericHelper.prompt_command(cmd)
-        return os.path.join(localPath, name)
-
-    @staticmethod
     def PC2Android(localPath: str, androidPath: str, deviceID: str = "1234567") -> None:
         if not SystemHelper.is_adb_available(deviceID):
             return
@@ -144,7 +128,27 @@ class SystemHelper:
             logger.error(f"Could not open port {comport}")
         androidPath = f"{SystemHelper.disk_mapping.get('android', '/data/nfs/nfs_share/')}/{filename}"
         SystemHelper.Android2PC(androidPath, localPath, deviceID)
+        
+    @staticmethod
+    def android_screencapture(
+        deviceID: str = "1234567", name: str = "screencap.png", localPath: str = "."
+    ) -> str:
+        if not SystemHelper.is_adb_available(deviceID):
+            return
+        cmd = f"adb -s {deviceID} shell screencap -p /sdcard/{name} && adb -s {deviceID} pull /sdcard/{name} {localPath}"
+        GenericHelper.prompt_command(cmd)
+        return os.path.join(localPath, name)
 
+    @staticmethod
+    def android_logcat(
+        deviceID: str = "1234567", name: str = "logcat.txt", localPath: str = "."
+    ) -> str:
+        if not SystemHelper.is_adb_available(deviceID):
+            return
+        cmd = f"adb -s {deviceID} logcat -d -f /sdcard/{name} && adb -s {deviceID} pull /sdcard/{name} {localPath}"
+        GenericHelper.prompt_command(cmd)
+        return os.path.join(localPath, name)
+        
     @staticmethod
     def QNX_slog(
         comport: str,

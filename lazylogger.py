@@ -142,6 +142,8 @@ magic_frame = [
     # [sg.Button("Clear")],
     [sg.Button("Android_Snapshot")],
     [sg.Button("Android_Logcat")],
+    [sg.Button("Android_Anr")],
+    [sg.Button("Android_Tombstones")],
     [sg.Button("QNX_slog2info")],
 ]
 output_frame = [
@@ -240,6 +242,26 @@ while True:
             kwargs={
                 "deviceID": values["deviceid"],
                 "localPath": values["folder"],
+            },
+            daemon=True,
+        ).start()
+    elif event == "Android_Anr":
+        threading.Thread(
+            target=SystemHelper.Android2PC,
+            kwargs={
+                "androidPath": '/data/anr',
+                "localPath": values["folder"],
+                "deviceID": values["deviceid"],
+            },
+            daemon=True,
+        ).start()
+    elif event == "Android_Tombstones":
+        threading.Thread(
+            target=SystemHelper.Android2PC,
+            kwargs={
+                "androidPath": '/data/tombstones',
+                "localPath": values["folder"],
+                "deviceID": values["deviceid"],
             },
             daemon=True,
         ).start()
