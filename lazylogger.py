@@ -28,30 +28,30 @@ def gui_log_handler(message):
 
 
 def set_defaults(input_value):
-    if deviceid := SystemHelper.get_adb_devices():
-        window["deviceid"].update(deviceid[0])
     window["user"].update(GenericHelper.get_username())
     window["machine"].update(GenericHelper.get_hostname())
-    if not input_value:
-        return
-    if a := input_value.get("aos"):
-        window["aos"].update(a)
-    if q := input_value.get("qnx"):
-        window["qnx"].update(q)
-    if u := input_value.get("username"):
-        window["username"].update(u)
-    if p := input_value.get("password"):
-        window["password"].update(p)
-    if c := input_value.get("comport"):
-        window["comport"].update(c)
-    if f := input_value.get("folder"):
-        window["folder"].update(f)
-    if qm := input_value.get("qnxmapping"):
-        window["qnxmapping"].update(qm)
-        SystemHelper.disk_mapping.update({"qnx": qm})
-    if am := input_value.get("aosmapping"):
-        window["aosmapping"].update(am)
-        SystemHelper.disk_mapping.update({"android": am})
+    if input_value:
+        if a := input_value.get("aos"):
+            window["aos"].update(a)
+        if q := input_value.get("qnx"):
+            window["qnx"].update(q)
+        if u := input_value.get("username"):
+            window["username"].update(u)
+        if p := input_value.get("password"):
+            window["password"].update(p)
+        if c := input_value.get("comport"):
+            window["comport"].update(c)
+        if f := input_value.get("folder"):
+            window["folder"].update(f)
+        if qm := input_value.get("qnxmapping"):
+            window["qnxmapping"].update(qm)
+            SystemHelper.disk_mapping.update({"qnx": qm})
+        if am := input_value.get("aosmapping"):
+            window["aosmapping"].update(am)
+            SystemHelper.disk_mapping.update({"android": am})
+    if deviceid := SystemHelper.get_adb_devices():
+        window["deviceid"].update(deviceid[0])
+    logger.success("========================Init Success!========================")
 
 
 def update_text_area(default_folder):
