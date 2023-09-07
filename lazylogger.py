@@ -51,7 +51,7 @@ def set_defaults(input_value):
             SystemHelper.disk_mapping.update({"android": am})
     if deviceid := SystemHelper.get_adb_devices():
         window["deviceid"].update(deviceid[0])
-    logger.success("========================Init Success!========================")
+    logger.success("====Init Success!====")
 
 
 def update_text_area(default_folder):
