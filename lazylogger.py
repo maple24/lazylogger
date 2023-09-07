@@ -10,6 +10,8 @@ from utils import (
     load_value_from_shelf,
     save_value_to_shelf,
     get_file_modification_times,
+    get_desktop,
+    list_files
 )
 
 # ========================================prepare================================================
@@ -17,6 +19,7 @@ from utils import (
 sg.theme("Topanga")  # Use the 'Topanga' theme for a colorful appearance
 __author__ = "Author: ZHU JIN"
 __version__ = "Version: 1.0"
+
 
 # Configure Loguru to use the custom handler
 def gui_log_handler(message):
@@ -52,37 +55,27 @@ def set_defaults(input_value):
 
 
 def update_text_area(folder_path):
-    # previous_files = set(list_files(folder_path))
-    # # previous_files = set()
+    # previous_mod_times = get_file_modification_times(folder_path)
 
     # while True:
     #     time.sleep(0.1)
-    #     files = set(list_files(folder_path))
-    #     new_files = files - previous_files
-    #     # if files != previous_files:
-    #     if new_files:
-    #         # window["output"].update("\n".join(files))
-    #         window["output"].update("\n".join(new_files) + "\n", append=True)
-    #     previous_files = files
-    previous_mod_times = get_file_modification_times(folder_path)
-
-    while True:
-        time.sleep(0.1)
-        current_mod_times = get_file_modification_times(folder_path)
-        changed_files = [
-            file
-            for file in current_mod_times
-            if current_mod_times[file] != previous_mod_times.get(file)
-        ]
-        if changed_files:
-            window["output"].update("\n".join(changed_files))
-        previous_mod_times = current_mod_times
-        sg.popup_animated(None)  # Refresh the window to prevent flickering
+    #     current_mod_times = get_file_modification_times(folder_path)
+    #     changed_files = [
+    #         file
+    #         for file in current_mod_times
+    #         if current_mod_times[file] != previous_mod_times.get(file)
+    #     ]
+    #     if changed_files:
+    #         window["output"].update("\n".join(changed_files))
+    #     previous_mod_times = current_mod_times
+    #     sg.popup_animated(None)  # Refresh the window to prevent flickering
+    files = set(list_files(folder_path))
+    window["output"].update("\n".join(files))
 
 
 logger.remove()  # Remove the default logger
 logger.add(gui_log_handler, colorize=True)  # Add the custom handler
-default_folder = os.path.dirname(__file__)
+default_folder = get_desktop()
 # ========================================prepare================================================
 # ========================================prepare================================================
 
@@ -167,7 +160,7 @@ output_frame = [
 
 # Combine frames and separator in the layout
 layout = [
-    [        
+    [
         sg.Frame("Software", software_frame, font=("Arial", 12), size=(350, 180)),
         sg.VerticalSeparator(),
         sg.Frame("System", system_frame, font=("Arial", 12), size=(350, 180)),
@@ -190,7 +183,6 @@ window["aos"].bind("<Return>", "_Enter")  # Bind the Return key to the Execute b
 store = load_value_from_shelf()
 input_value = store if store else {}
 threading.Thread(target=set_defaults, args=(input_value,), daemon=True).start()
-threading.Thread(target=update_text_area, args=(default_folder,), daemon=True).start()
 
 while True:
     event, values = window.read()
@@ -234,14 +226,22 @@ while True:
                 daemon=True,
             ).start()
     elif event == "Android_Snapshot":
-        ...
+        threading.Thread(
+            target=SystemHelper.android_screencapture,
+            kwargs={
+                "deviceID": values["deviceid"],
+                "localPath": values["folder"],
+            },
+            daemon=True,
+        ).start()
     elif event == "Android_Logcat":
-        ...
+        logger.info("Upcoming!")
     elif event == "QNX_slog2info":
-        ...
+        logger.info("Upcoming!")
     elif event == "Clear":
         window["log"].update("")
         window["output"].update("")
+    threading.Thread(target=update_text_area, args=(window["folder"].get(), ), daemon=True).start()
 
 
 window.close()

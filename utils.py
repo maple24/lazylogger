@@ -18,6 +18,10 @@ def strip_ansi_escape_codes(text):
     return ansi_escape.sub("", text)
 
 
+def get_desktop():
+    return os.path.join(os.path.join(os.environ["USERPROFILE"]), "Desktop")
+
+
 # Define the exclude_if decorator
 def exclude_if(*patterns):
     def decorator(fn):
@@ -50,11 +54,4 @@ def get_file_modification_times(folder_path):
 
 
 if __name__ == "__main__":
-    # Example usage:
-    directory_path = "."
-
-    filtered_files = list_files(directory_path)
-
-    # Print the filtered file list
-    for file in filtered_files:
-        print(file)
+    print(get_desktop())

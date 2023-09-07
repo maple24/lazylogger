@@ -75,7 +75,7 @@ class SystemHelper:
     def android_screencapture(
         deviceID: str = "1234567", name: str = "screencap.png", localPath: str = "."
     ) -> str:
-        cmd = f"adb -s {deviceID} shell screencap -p /sdcard/{name} && adb pull /sdcard/{name} {localPath}"
+        cmd = f"adb -s {deviceID} shell screencap -p /sdcard/{name} && adb -s {deviceID} pull /sdcard/{name} {localPath}"
         GenericHelper.prompt_command(cmd)
         return os.path.join(localPath, name)
 
